@@ -50,7 +50,7 @@ import java.util.UUID;
 public class MobLevelingHandler {
 
 	// ===================== CONFIGURACION =====================
-	private static final double ZONE_SIZE = 1500;         // bloques por zona
+	private static final double ZONE_SIZE = 1200;         // bloques por zona
 	private static final int ZONE_BONUS = 3;              // niveles extra por zona
 	private static final int ANNOUNCE_DAY = 3;            // dia del aviso; desde aqui empieza el bonus por dias
 	private static final int DAYS_PER_LEVEL = 5;          // +1 nivel cada X dias (despues del dia de aviso)
