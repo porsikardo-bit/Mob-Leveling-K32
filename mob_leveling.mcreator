@@ -1,0 +1,44 @@
+{
+  "mod_elements": [],
+  "variable_elements": [
+    {
+      "name": "NivelPorDias",
+      "type": "number",
+      "scope": "map",
+      "value": "0"
+    },
+    {
+      "name": "UltimaZonaJugador",
+      "type": "number",
+      "scope": "player_persistent",
+      "value": "0"
+    }
+  ],
+  "sound_elements": [],
+  "language_map": {
+    "en_us": {}
+  },
+  "foldersRoot": {
+    "name": "~",
+    "children": []
+  },
+  "workspaceSettings": {
+    "modid": "mob_leveling",
+    "modName": "Mob Leveling-K32",
+    "version": "1.0.0",
+    "author": "Kardo, MCreator",
+    "websiteURL": "https://mcreator.net",
+    "license": "Academic Free License v3.0",
+    "disableForgeVersionCheck": true,
+    "serverSideOnly": false,
+    "requiredMods": [],
+    "dependencies": [],
+    "dependants": [],
+    "mcreatorDependencies": [],
+    "currentGenerator": "forge-1.20.1",
+    "credits": "Created using mod maker MCreator - https://mcreator.net/about",
+    "modElementsPackage": "net.mcreator.mobleveling",
+    "lockBaseModFiles": false
+  },
+  "mcreatorVersion": 202300452316
+}
