@@ -6,7 +6,7 @@ Mod para **Minecraft 1.20.1 (Forge)** que hace crecer la dificultad del mundo: l
 
 ## Características
 
-- **Zonas:** cada 1500 bloques desde el spawn se entra a una nueva zona. Al entrar o volver a una zona aparece un aviso en pantalla (Zona 1, 2, 3…).
+- **Zonas:** cada 1200 bloques desde el spawn se entra a una nueva zona. Al entrar o volver a una zona aparece un aviso en pantalla (Zona 1, 2, 3…).
 - **Nivel base por zona:** +3 niveles por zona, desde el día 1.
 - **Días:** el día 3 suena un aviso y los monstruos empiezan a subir de nivel (+1 cada 5 días).
 - **Niveles aleatorios:** algunos mobs pueden nacer con hasta +5 niveles extra (cada nivel extra es menos probable).
