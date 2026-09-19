@@ -1,0 +1,8 @@
+{
+  "mob_leveling.days_title": "EL MUNDO SE HACE MÁS DIFÍCIL",
+  "mob_leveling.days_subtitle": "Los monstruos comenzarán a subir de nivel",
+  "mob_leveling.zone_initial": "ZONA INICIAL",
+  "mob_leveling.zone": "ZONA %s",
+  "mob_leveling.zone_subtitle": "Nivel base de los monstruos: %s",
+  "mob_leveling.mob_level": "[Nv. %s]"
+}

@@ -14,9 +14,6 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
-import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
-import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -45,6 +42,7 @@ import java.util.UUID;
  *
  * Toda la logica corre en el SERVIDOR (o servidor integrado / mundo LAN), asi que
  * funciona igual en solitario, en servidores dedicados y en mundos compartidos.
+ * El dibujo de los titulos en pantalla lo hace ZoneTitleClient.
  */
 @Mod.EventBusSubscriber(modid = "mob_leveling")
 public class MobLevelingHandler {
@@ -56,6 +54,9 @@ public class MobLevelingHandler {
 	private static final int DAYS_PER_LEVEL = 5;          // +1 nivel cada X dias (despues del dia de aviso)
 	private static final int MAX_LEVEL = 100;
 	private static final double PERCENT_PER_LEVEL = 0.10; // +10% de vida y dano por nivel
+
+	// Tiempo minimo entre avisos de zona (evita repeticiones al caminar por el borde de una zona)
+	private static final int ZONE_COOLDOWN_TICKS = 200;   // 200 ticks = 10 segundos
 
 	// Niveles aleatorios extra: cada "tirada" exitosa suma +1 (hasta el maximo).
 	// Con 0.40 -> +0: 60%, +1: 24%, +2: 9.6%, +3: 3.8%, +4: 1.5%, +5: 1.0%
@@ -74,6 +75,7 @@ public class MobLevelingHandler {
 	private static final UUID HEALTH_ID = UUID.fromString("b3f1c2a4-7d5e-4c8a-9f21-5a6e0d3c1b01");
 	private static final UUID DAMAGE_ID = UUID.fromString("b3f1c2a4-7d5e-4c8a-9f21-5a6e0d3c1b02");
 	private static final Map<UUID, Integer> LAST_ZONE = new HashMap<>();
+	private static final Map<UUID, Integer> LAST_ANNOUNCE = new HashMap<>();
 
 	// ---------- Estado guardado en el mundo (aviso del dia 3 solo una vez) ----------
 	public static class State extends SavedData {
@@ -131,47 +133,62 @@ public class MobLevelingHandler {
 
 		// Aviso del dia 3 (solo una vez por mundo)
 		State state = server.overworld().getDataStorage().computeIfAbsent(State::load, State::new, "mob_leveling_state");
-		if (!state.announced && currentDay(server) >= ANNOUNCE_DAY) {
+		long day = currentDay(server);
+		if (!state.announced && day >= ANNOUNCE_DAY) {
 			state.announced = true;
 			state.setDirty();
+			// En un mundo que ya paso del dia 3 al instalar el mod, se avisa sin el sonido fuerte del Wither
+			boolean withSound = day == ANNOUNCE_DAY;
 			for (ServerPlayer p : server.getPlayerList().getPlayers()) {
-				showTitle(p, Component.literal("EL MUNDO SE HACE M\u00C1S DIF\u00CDCIL").withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD),
-						Component.literal("Los monstruos comenzar\u00E1n a subir de nivel").withStyle(ChatFormatting.GRAY));
-				p.playNotifySound(SoundEvents.WITHER_SPAWN, SoundSource.MASTER, 1.0F, 1.0F);
+				ZoneTitleNetwork.send(p, Component.translatableWithFallback("mob_leveling.days_title", "THE WORLD GROWS HARDER").withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD),
+						Component.translatableWithFallback("mob_leveling.days_subtitle", "Monsters will begin to level up").withStyle(ChatFormatting.GRAY));
+				if (withSound)
+					p.playNotifySound(SoundEvents.WITHER_SPAWN, SoundSource.MASTER, 1.0F, 1.0F);
 			}
 		}
 
 		// Anuncio de zona al entrar / volver a una zona
+		int now = server.getTickCount();
 		for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+			UUID id = p.getUUID();
 			int zone = zoneAt(p.serverLevel(), p.getX(), p.getZ());
-			Integer previous = LAST_ZONE.put(p.getUUID(), zone);
-			if (previous == null || previous != zone) {
-				Component title = zone == 0
-						? Component.literal("ZONA INICIAL").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)
-						: Component.literal("ZONA " + zone).withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD);
-				Component subtitle = Component.literal("Nivel base de los monstruos: " + Math.min(1 + zone * ZONE_BONUS, MAX_LEVEL)).withStyle(ChatFormatting.GOLD);
-				showTitle(p, title, subtitle);
-				if (previous != null)
-					p.playNotifySound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.MASTER, 0.6F, 1.0F);
+			Integer previous = LAST_ZONE.get(id);
+			if (previous == null) {
+				LAST_ZONE.put(id, zone);
+				LAST_ANNOUNCE.put(id, now);
+				announceZone(p, zone, false);
+			} else if (previous != zone) {
+				Integer last = LAST_ANNOUNCE.get(id);
+				if (last == null || now - last >= ZONE_COOLDOWN_TICKS) {
+					LAST_ZONE.put(id, zone);
+					LAST_ANNOUNCE.put(id, now);
+					announceZone(p, zone, true);
+				}
 			}
 		}
+	}
+
+	private static void announceZone(ServerPlayer p, int zone, boolean withSound) {
+		Component title = zone == 0
+				? Component.translatableWithFallback("mob_leveling.zone_initial", "STARTING ZONE").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)
+				: Component.translatableWithFallback("mob_leveling.zone", "ZONE %s", zone).withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD);
+		Component subtitle = Component.translatableWithFallback("mob_leveling.zone_subtitle", "Base monster level: %s", Math.min(1 + zone * ZONE_BONUS, MAX_LEVEL)).withStyle(ChatFormatting.GOLD);
+		ZoneTitleNetwork.send(p, title, subtitle);
+		if (withSound)
+			p.playNotifySound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.MASTER, 0.6F, 1.0F);
 	}
 
 	@SubscribeEvent
 	public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
 		LAST_ZONE.remove(event.getEntity().getUUID());
+		LAST_ANNOUNCE.remove(event.getEntity().getUUID());
 	}
 
 	// Importante en mundos de un jugador / LAN: el servidor integrado se reinicia dentro del mismo juego.
 	@SubscribeEvent
 	public static void onServerStopped(ServerStoppedEvent event) {
 		LAST_ZONE.clear();
-	}
-
-	private static void showTitle(ServerPlayer player, Component title, Component subtitle) {
-		player.connection.send(new ClientboundSetTitlesAnimationPacket(10, 50, 15));
-		player.connection.send(new ClientboundSetSubtitleTextPacket(subtitle));
-		player.connection.send(new ClientboundSetTitleTextPacket(title));
+		LAST_ANNOUNCE.clear();
 	}
 
 	// ---------- Nivelar mobs al aparecer ----------
@@ -211,7 +228,7 @@ public class MobLevelingHandler {
 
 		// Los jefes conservan su nombre original
 		if (!boss) {
-			mob.setCustomName(Component.literal("[Nv. " + lvl + "] ").withStyle(ChatFormatting.RED)
+			mob.setCustomName(Component.translatableWithFallback("mob_leveling.mob_level", "[Lv. %s]", lvl).withStyle(ChatFormatting.RED).append(Component.literal(" "))
 					.append(mob.getName().copy().withStyle(ChatFormatting.WHITE)));
 			mob.setCustomNameVisible(true);
 		}

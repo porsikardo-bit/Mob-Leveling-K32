@@ -12,6 +12,7 @@ Mod para **Minecraft 1.20.1 (Forge)** que hace crecer la dificultad del mundo: l
 - **Niveles aleatorios:** algunos mobs pueden nacer con hasta +5 niveles extra (cada nivel extra es menos probable).
 - **Escalado:** +10% de vida y daño por nivel, hasta el nivel 100.
 - **Nivel visible:** el nivel aparece en el nombre del mob (`[Nv. 12] Zombie`).
+- **Idiomas:** inglés y español. Para agregar otro idioma, crea un archivo (por ejemplo `fr_fr.json`) en `src/main/resources/assets/mob_leveling/lang/` con las mismas claves que `es_es.json`.
 - **Compatible con otros mods:** afecta a cualquier mob hostil. Los jefes (vanilla o de otros mods) no se modifican por defecto.
 
 Fórmula: `nivel = 1 + (zona × 3) + bonus_por_días + bonus_aleatorio` (máx. 100)
