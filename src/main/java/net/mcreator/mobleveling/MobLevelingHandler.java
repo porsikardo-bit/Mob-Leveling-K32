@@ -56,7 +56,7 @@ public class MobLevelingHandler {
 	private static final double PERCENT_PER_LEVEL = 0.10; // +10% de vida y dano por nivel
 
 	// Tiempo minimo entre avisos de zona (evita repeticiones al caminar por el borde de una zona)
-	private static final int ZONE_COOLDOWN_TICKS = 200;   // 200 ticks = 10 segundos
+	private static final int ZONE_COOLDOWN_TICKS = 100;   // 100 ticks = 5 segundos
 
 	// Niveles aleatorios extra: cada "tirada" exitosa suma +1 (hasta el maximo).
 	// Con 0.40 -> +0: 60%, +1: 24%, +2: 9.6%, +3: 3.8%, +4: 1.5%, +5: 1.0%
