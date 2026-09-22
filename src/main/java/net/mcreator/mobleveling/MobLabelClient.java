@@ -54,9 +54,15 @@ public class MobLabelClient {
 
 	// Solo afecta a los mobs que llevan nuestra etiqueta, no a otros nombres de otros mods
 	private static boolean isLevelLabel(Entity entity) {
-		Component name = entity.getCustomName();
-		return name != null && name.getContents() instanceof TranslatableContents contents && NAME_KEY.equals(contents.getKey());
-	}
+	Component name = entity.getCustomName();
+	if (name == null)
+		return false;
+	if (name.getContents() instanceof TranslatableContents contents && NAME_KEY.equals(contents.getKey()))
+		return true;
+	// Mobs creados con versiones anteriores
+	String text = name.getString();
+	return text.startsWith("[Nv. ") || text.startsWith("[Lv. ");
+}
 
 	private static boolean isVisible(Entity entity) {
 		Minecraft mc = Minecraft.getInstance();
